@@ -1,0 +1,26 @@
+{
+  "name": "loyalty-wallet-saas",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Multi-Tenant Digital Loyalty Cards SaaS (Apple & Google Wallet)",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:api": "npm run dev --workspace=packages/api-server",
+    "dev:dashboard": "npm run dev --workspace=packages/dashboard",
+    "dev:staff": "npm run dev --workspace=packages/staff-pwa",
+    "build": "npm run build --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.4",
+    "dotenv": "^18.0.5",
+    "drizzle-kit": "^0.31.11",
+    "typescript": "^7.0.2"
+  }
+}

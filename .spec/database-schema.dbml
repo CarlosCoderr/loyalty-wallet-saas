@@ -1,0 +1,181 @@
+// ==========================================
+// MULTI-TENANT DIGITAL LOYALTY PLATFORM DB
+// ==========================================
+// Implementación: packages/api-server/src/db/schema.ts (Drizzle)
+// Regla: toda tabla lleva tenant_id (ON DELETE CASCADE desde tenants).
+
+Enum plan_tier {
+  basic
+  pro
+  enterprise
+}
+
+Enum staff_role {
+  admin
+  cashier
+}
+
+Enum stamp_rule_type {
+  per_amount
+  per_visit
+}
+
+Enum pass_status {
+  active
+  suspended
+}
+
+Enum transaction_type {
+  add_stamp
+  redeem_reward
+}
+
+Table tenants {
+  id uuid [pk, default: `gen_random_uuid()`]
+  name varchar(255) [not null]
+  slug varchar(100) [unique, not null]
+  owner_email varchar(255) [not null]
+  phone varchar(50)
+  plan_tier plan_tier [not null, default: 'basic']
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+}
+
+Table branches {
+  id uuid [pk, default: `gen_random_uuid()`]
+  tenant_id uuid [ref: > tenants.id, not null]
+  name varchar(255) [not null]
+  address text
+  api_key_hash varchar(255) [unique] // solo el hash; la key en claro se muestra una vez
+  created_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    tenant_id
+  }
+}
+
+Table staff_users {
+  id uuid [pk, default: `gen_random_uuid()`]
+  tenant_id uuid [ref: > tenants.id, not null]
+  branch_id uuid [ref: > branches.id] // ON DELETE SET NULL
+  email varchar(255) [not null]
+  password_hash varchar(255) [not null]
+  full_name varchar(255)
+  pin_hash varchar(255) // PIN rápido de 4 dígitos para cajero, hasheado
+  role staff_role [not null, default: 'cashier']
+  created_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (tenant_id, email) [unique]
+    branch_id
+  }
+}
+
+Table loyalty_programs {
+  id uuid [pk, default: `gen_random_uuid()`]
+  tenant_id uuid [ref: > tenants.id, not null]
+  title varchar(255) [not null]
+  description text
+
+  // Reglas de Fidelización
+  stamp_rule_type stamp_rule_type [not null, default: 'per_amount']
+  amount_per_stamp decimal(10,2) [not null, default: 10.00]    // Ej: $10 = 1 Sello (> 0)
+  min_purchase_amount decimal(10,2) [not null, default: 0.00]  // Umbral mínimo (>= 0)
+  total_stamps int [not null, default: 10]                     // > 0
+  reward_title varchar(255) [not null]
+
+  // Personalización Estética
+  primary_color varchar(20) [not null, default: '#000000']
+  background_color varchar(20) [not null, default: '#FFFFFF']
+  label_color varchar(20) [not null, default: '#000000']
+  logo_url text
+  stamp_icon_url text
+  banner_url text
+
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    tenant_id
+  }
+}
+
+Table customers {
+  id uuid [pk, default: `gen_random_uuid()`]
+  tenant_id uuid [ref: > tenants.id, not null]
+  phone varchar(50) [not null]
+  first_name varchar(100) [not null]
+  last_name varchar(100)
+  email varchar(255)
+  birth_date date
+  created_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (tenant_id, phone) [unique]
+  }
+}
+
+Table passes {
+  id uuid [pk, default: `gen_random_uuid()`]
+  tenant_id uuid [ref: > tenants.id, not null]
+  program_id uuid [ref: > loyalty_programs.id, not null] // ON DELETE RESTRICT
+  customer_id uuid [ref: > customers.id, not null]
+  serial_number varchar(100) [unique, not null] // QR escaneable
+  authentication_token varchar(64) [not null]   // Apple PassKit Web Service
+  current_stamps int [not null, default: 0]     // >= 0
+  carryover_amount decimal(10,2) [not null, default: 0.00] // sobrante per_amount
+  rewards_redeemed int [not null, default: 0]
+  google_loyalty_object_id text
+  status pass_status [not null, default: 'active']
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (program_id, customer_id) [unique]
+    tenant_id
+    customer_id
+  }
+}
+
+// Apple Wallet: un pase puede estar en varios dispositivos, cada uno con su push token.
+Table apple_devices {
+  id uuid [pk, default: `gen_random_uuid()`]
+  tenant_id uuid [ref: > tenants.id, not null]
+  device_library_identifier varchar(255) [not null]
+  push_token text [not null]
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (tenant_id, device_library_identifier) [unique]
+  }
+}
+
+Table apple_registrations {
+  tenant_id uuid [ref: > tenants.id, not null]
+  device_id uuid [ref: > apple_devices.id, not null]
+  pass_id uuid [ref: > passes.id, not null]
+  created_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (device_id, pass_id) [pk]
+    pass_id
+  }
+}
+
+Table transactions {
+  id uuid [pk, default: `gen_random_uuid()`]
+  tenant_id uuid [ref: > tenants.id, not null]
+  pass_id uuid [ref: > passes.id, not null] // ON DELETE RESTRICT (conserva historial)
+  staff_id uuid [ref: > staff_users.id]     // ON DELETE SET NULL
+  branch_id uuid [ref: > branches.id]       // ON DELETE SET NULL
+  type transaction_type [not null]
+  purchase_amount decimal(10,2) [not null, default: 0.00]
+  stamps_added int [not null, default: 1]
+  created_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (tenant_id, created_at)
+    pass_id
+  }
+}
