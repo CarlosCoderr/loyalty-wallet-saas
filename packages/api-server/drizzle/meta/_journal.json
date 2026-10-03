@@ -8,6 +8,13 @@
       "when": 1790919873891,
       "tag": "0000_next_shard",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790997324293,
+      "tag": "0001_complete_rhodey",
+      "breakpoints": true
     }
   ]
 }

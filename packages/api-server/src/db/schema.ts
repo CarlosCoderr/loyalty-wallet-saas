@@ -27,6 +27,7 @@ export const staffRoleEnum = pgEnum('staff_role', ['admin', 'cashier']);
 export const stampRuleTypeEnum = pgEnum('stamp_rule_type', ['per_amount', 'per_visit']);
 export const passStatusEnum = pgEnum('pass_status', ['active', 'suspended']);
 export const transactionTypeEnum = pgEnum('transaction_type', ['add_stamp', 'redeem_reward']);
+export const rewardStatusEnum = pgEnum('reward_status', ['pending', 'redeemed']);
 
 // ==========================================
 // HELPERS
@@ -221,11 +222,49 @@ export const transactions = pgTable(
     type: transactionTypeEnum('type').notNull(),
     purchaseAmount: money('purchase_amount').default('0.00').notNull(),
     stampsAdded: integer('stamps_added').default(1).notNull(),
+    notes: text('notes'),
     createdAt: createdAt(),
   },
   (t) => [
     index('transactions_tenant_created_idx').on(t.tenantId, t.createdAt),
     index('transactions_pass_idx').on(t.passId),
+  ],
+);
+
+// Cada tarjeta completada genera un premio 'pending'; el cajero lo canjea después.
+export const rewardRedemptions = pgTable(
+  'reward_redemptions',
+  {
+    id: id(),
+    tenantId: tenantId(),
+    passId: uuid('pass_id')
+      .notNull()
+      .references(() => passes.id, { onDelete: 'restrict' }),
+    // Copia del premio al momento de ganarlo: si el programa cambia, el premio ganado no.
+    rewardTitle: varchar('reward_title', { length: 255 }).notNull(),
+    status: rewardStatusEnum('status').default('pending').notNull(),
+    earnedTransactionId: uuid('earned_transaction_id').references(() => transactions.id, {
+      onDelete: 'set null',
+    }),
+    redeemedTransactionId: uuid('redeemed_transaction_id').references(() => transactions.id, {
+      onDelete: 'set null',
+    }),
+    redeemedByStaffId: uuid('redeemed_by_staff_id').references(() => staffUsers.id, {
+      onDelete: 'set null',
+    }),
+    redeemedAtBranchId: uuid('redeemed_at_branch_id').references(() => branches.id, {
+      onDelete: 'set null',
+    }),
+    earnedAt: timestamp('earned_at', { withTimezone: true }).defaultNow().notNull(),
+    redeemedAt: timestamp('redeemed_at', { withTimezone: true }),
+  },
+  (t) => [
+    index('reward_redemptions_pass_status_idx').on(t.passId, t.status),
+    index('reward_redemptions_tenant_idx').on(t.tenantId),
+    check(
+      'reward_redemptions_redeemed_chk',
+      sql`(${t.status} = 'pending' AND ${t.redeemedAt} IS NULL) OR (${t.status} = 'redeemed' AND ${t.redeemedAt} IS NOT NULL)`,
+    ),
   ],
 );
 
@@ -240,6 +279,7 @@ export const tenantsRelations = relations(tenants, ({ many }) => ({
   customers: many(customers),
   passes: many(passes),
   transactions: many(transactions),
+  rewardRedemptions: many(rewardRedemptions),
 }));
 
 export const branchesRelations = relations(branches, ({ one, many }) => ({
@@ -270,6 +310,7 @@ export const passesRelations = relations(passes, ({ one, many }) => ({
   customer: one(customers, { fields: [passes.customerId], references: [customers.id] }),
   appleRegistrations: many(appleRegistrations),
   transactions: many(transactions),
+  rewardRedemptions: many(rewardRedemptions),
 }));
 
 export const appleDevicesRelations = relations(appleDevices, ({ many }) => ({
@@ -286,4 +327,13 @@ export const transactionsRelations = relations(transactions, ({ one }) => ({
   pass: one(passes, { fields: [transactions.passId], references: [passes.id] }),
   staff: one(staffUsers, { fields: [transactions.staffId], references: [staffUsers.id] }),
   branch: one(branches, { fields: [transactions.branchId], references: [branches.id] }),
+}));
+
+export const rewardRedemptionsRelations = relations(rewardRedemptions, ({ one }) => ({
+  tenant: one(tenants, { fields: [rewardRedemptions.tenantId], references: [tenants.id] }),
+  pass: one(passes, { fields: [rewardRedemptions.passId], references: [passes.id] }),
+  redeemedBy: one(staffUsers, {
+    fields: [rewardRedemptions.redeemedByStaffId],
+    references: [staffUsers.id],
+  }),
 }));

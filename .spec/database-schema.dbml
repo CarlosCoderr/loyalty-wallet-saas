@@ -30,6 +30,11 @@ Enum transaction_type {
   redeem_reward
 }
 
+Enum reward_status {
+  pending
+  redeemed
+}
+
 Table tenants {
   id uuid [pk, default: `gen_random_uuid()`]
   name varchar(255) [not null]
@@ -172,10 +177,31 @@ Table transactions {
   type transaction_type [not null]
   purchase_amount decimal(10,2) [not null, default: 0.00]
   stamps_added int [not null, default: 1]
+  notes text
   created_at timestamptz [not null, default: `now()`]
 
   indexes {
     (tenant_id, created_at)
     pass_id
+  }
+}
+
+// Cada tarjeta completada genera un premio 'pending'; el cajero lo canjea después.
+Table reward_redemptions {
+  id uuid [pk, default: `gen_random_uuid()`]
+  tenant_id uuid [ref: > tenants.id, not null]
+  pass_id uuid [ref: > passes.id, not null]                 // ON DELETE RESTRICT
+  reward_title varchar(255) [not null]                      // copia del premio al ganarlo
+  status reward_status [not null, default: 'pending']
+  earned_transaction_id uuid [ref: > transactions.id]       // ON DELETE SET NULL
+  redeemed_transaction_id uuid [ref: > transactions.id]     // ON DELETE SET NULL
+  redeemed_by_staff_id uuid [ref: > staff_users.id]         // ON DELETE SET NULL
+  redeemed_at_branch_id uuid [ref: > branches.id]           // ON DELETE SET NULL
+  earned_at timestamptz [not null, default: `now()`]
+  redeemed_at timestamptz                                   // obligatorio si status = redeemed
+
+  indexes {
+    (pass_id, status)
+    tenant_id
   }
 }
