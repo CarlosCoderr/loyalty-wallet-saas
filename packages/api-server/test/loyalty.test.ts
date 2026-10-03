@@ -26,6 +26,20 @@ describe('caja: sellos, premios y canje (/api/v1/loyalty)', () => {
     cashier = await api.loginCashier();
   });
 
+  it('GET programas: el cajero ve solo los activos de su negocio', async () => {
+    const admin = await api.loginAdmin();
+    await api.post('/api/v1/admin/programs', { title: 'Borrador', stampRuleType: 'per_visit', totalStamps: 5, rewardTitle: 'Premio', status: 'draft' }, admin);
+    await queryOne(sql`
+      with t as (insert into tenants (name, slug, owner_email) values ('Otro', 'test-otro', 'o@o.com') returning id)
+      insert into loyalty_programs (tenant_id, title, reward_title) select id, 'Ajeno', 'Premio' from t returning id`);
+
+    const res = await api.get('/api/v1/loyalty/programs', cashier);
+    expect(res.status).toBe(200);
+    expect(res.body.data.map((p: { title: string }) => p.title)).toEqual(['Programa VIP Tarjeta Digital']);
+    expect(res.body.data[0]).toMatchObject({ totalStamps: 10, rewardTitle: 'Café gratis', stampRuleType: 'per_amount' });
+    expect((await api.get('/api/v1/loyalty/programs')).status).toBe(401);
+  });
+
   it('GET pase: estado actual sin exponer authenticationToken', async () => {
     const res = await api.get(PASS, cashier);
     expect(res.status).toBe(200);

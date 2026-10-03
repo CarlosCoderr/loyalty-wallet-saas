@@ -53,6 +53,24 @@ async function lockPass(tx: Tx, tenantId: string, passToken: string) {
   return pass;
 }
 
+/** Programas activos del tenant, con lo mínimo que necesita la caja para inscribir clientes. */
+export async function getActivePrograms(tenantId: string) {
+  return db.query.loyaltyPrograms.findMany({
+    where: and(eq(loyaltyPrograms.tenantId, tenantId), eq(loyaltyPrograms.status, 'active')),
+    columns: {
+      id: true,
+      title: true,
+      rewardTitle: true,
+      stampRuleType: true,
+      amountPerStamp: true,
+      minPurchaseAmount: true,
+      totalStamps: true,
+      primaryColor: true,
+    },
+    orderBy: asc(loyaltyPrograms.title),
+  });
+}
+
 export async function getPassDetails(passToken: string, tenantId: string) {
   const pass = await db.query.passes.findFirst({
     where: and(eq(passes.tenantId, tenantId), eq(passes.serialNumber, passToken)),

@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { authenticateJWT } from '../middlewares/auth.middleware.js';
 import { addStampsSchema, getPassParamsSchema, redeemRewardSchema } from '../schemas/loyalty.schema.js';
 import {
+  getActivePrograms,
   getPassDetails,
   processPurchaseAndStamps,
   redeemReward,
@@ -14,6 +15,11 @@ import { notifyPassChanged } from '../services/wallet/index.js';
 export async function loyaltyRoutes(app: FastifyInstance) {
   // Todas las rutas de este módulo requieren el JWT del staff
   app.addHook('onRequest', authenticateJWT);
+
+  // GET /api/v1/loyalty/programs - Programas activos (para inscribir clientes desde la caja)
+  app.get('/programs', async (request) => {
+    return { status: 'success', data: await getActivePrograms(request.user.tenantId) };
+  });
 
   // GET /api/v1/loyalty/pass/:passToken - Consultar estado del pase
   app.get('/pass/:passToken', async (request) => {
