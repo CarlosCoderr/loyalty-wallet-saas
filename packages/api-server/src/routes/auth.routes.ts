@@ -8,7 +8,7 @@ export async function authRoutes(app: FastifyInstance) {
   app.post('/login', async (request) => {
     // Si el body es inválido, ZodError → 400 en el error handler global
     const body = loginSchema.parse(request.body);
-    const { staff, tenant } = await authenticateStaff(body);
+    const { staff, tenant, tokenVersion } = await authenticateStaff(body);
 
     // El tenantId viaja en el token: toda ruta protegida filtra por él
     const token = app.jwt.sign({
@@ -16,12 +16,13 @@ export async function authRoutes(app: FastifyInstance) {
       tenantId: tenant.id,
       role: staff.role,
       branchId: staff.branchId,
+      ver: tokenVersion,
     });
 
     return { status: 'success', data: { token, user: staff, tenant } };
   });
 
-  // GET /api/v1/auth/me (protegida): devuelve el payload del token
+  // GET /api/v1/auth/me (protegida): devuelve el usuario de la sesión (rol y sucursal actuales)
   app.get('/me', { preHandler: authenticateJWT }, async (request) => {
     return { status: 'success', data: request.user };
   });

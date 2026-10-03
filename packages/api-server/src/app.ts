@@ -7,6 +7,8 @@ import { appleWalletRoutes } from './routes/apple-wallet.routes.js';
 import { authRoutes } from './routes/auth.routes.js';
 import { loyaltyRoutes } from './routes/loyalty.routes.js';
 import { HttpError } from './utils/http-error.js';
+import { adminRoutes } from './routes/admin.routes.js';
+import { customerRoutes, staffRoutes } from './routes/staff-customer.routes.js';
 
 // Construye la app sin escuchar en ningún puerto: así se puede usar en tests con app.inject().
 export async function buildApp() {
@@ -48,6 +50,8 @@ export async function buildApp() {
   await app.register(loyaltyRoutes, { prefix: '/api/v1/loyalty' });
   // webServiceURL del pase de Apple: https://<dominio>/api/apple
   await app.register(appleWalletRoutes, { prefix: '/api/apple' });
-
+  await app.register(adminRoutes, { prefix: '/api/v1/admin' });
+  await app.register(staffRoutes, { prefix: '/api/v1/admin' });
+  await app.register(customerRoutes, { prefix: '/api/v1/customers' });
   return app;
 }

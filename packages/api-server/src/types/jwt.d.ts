@@ -8,6 +8,8 @@ declare module '@fastify/jwt' {
       tenantId: string;
       role: 'admin' | 'cashier';
       branchId: string | null;
+      // staff_users.token_version al firmar: si cambió, el token ya no es válido
+      ver: number;
     };
     user: FastifyJWT['payload'];
   }

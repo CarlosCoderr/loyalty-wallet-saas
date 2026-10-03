@@ -35,6 +35,12 @@ Enum reward_status {
   redeemed
 }
 
+Enum program_status {
+  draft     // aún no emite pases
+  active
+  archived  // no suma sellos nuevos; los premios pendientes sí se canjean
+}
+
 Table tenants {
   id uuid [pk, default: `gen_random_uuid()`]
   name varchar(255) [not null]
@@ -50,12 +56,15 @@ Table branches {
   id uuid [pk, default: `gen_random_uuid()`]
   tenant_id uuid [ref: > tenants.id, not null]
   name varchar(255) [not null]
+  code varchar(50)  // obligatorio en la API (ej. CENTRO); nullable por filas antiguas
   address text
+  phone varchar(50)
   api_key_hash varchar(255) [unique] // solo el hash; la key en claro se muestra una vez
   created_at timestamptz [not null, default: `now()`]
 
   indexes {
     tenant_id
+    (tenant_id, code) [unique]
   }
 }
 
@@ -67,8 +76,11 @@ Table staff_users {
   password_hash varchar(255) [not null]
   full_name varchar(255)
   pin_hash varchar(255) // PIN rápido de 4 dígitos para cajero, hasheado
-  role staff_role [not null, default: 'cashier']
+  role staff_role [not null, default: 'cashier']   // cashier requiere branch_id (validado en la API)
+  is_active boolean [not null, default: true]
+  token_version int [not null, default: 0]         // va en el JWT; +1 al cambiar contraseña/PIN
   created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
 
   indexes {
     (tenant_id, email) [unique]
@@ -88,6 +100,8 @@ Table loyalty_programs {
   min_purchase_amount decimal(10,2) [not null, default: 0.00]  // Umbral mínimo (>= 0)
   total_stamps int [not null, default: 10]                     // > 0
   reward_title varchar(255) [not null]
+  reward_description text
+  status program_status [not null, default: 'active']
 
   // Personalización Estética
   primary_color varchar(20) [not null, default: '#000000']

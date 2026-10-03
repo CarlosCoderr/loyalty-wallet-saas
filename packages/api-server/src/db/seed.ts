@@ -33,8 +33,23 @@ async function seed() {
 
     const [branch] = await tx
       .insert(branches)
-      .values({ tenantId: tenant.id, name: 'Sucursal Centro', address: 'Av. Principal 123' })
+      .values({
+        tenantId: tenant.id,
+        name: 'Sucursal Centro',
+        code: 'CENTRO',
+        address: 'Av. Principal 123',
+        phone: '+520000000001',
+      })
       .returning();
+
+    // Administrador del tenant (sin sucursal: gestiona todas)
+    await tx.insert(staffUsers).values({
+      tenantId: tenant.id,
+      email: 'admin@agenciademo.com',
+      passwordHash: await bcrypt.hash('admin1234', 10),
+      fullName: 'Admin Demo',
+      role: 'admin',
+    });
 
     const [staff] = await tx
       .insert(staffUsers)
@@ -109,7 +124,9 @@ async function seed() {
 
   console.log('\n📊 Datos verificados con db.query:');
   console.dir(tenantData, { depth: null });
-  console.log('\n✅ Seed completado. Login demo: cajero@agenciademo.com / demo1234 (PIN 1234)');
+  console.log('\n✅ Seed completado. Tenant: agencia-demo');
+  console.log('   Cajero: cajero@agenciademo.com / demo1234 (PIN 1234)');
+  console.log('   Admin:  admin@agenciademo.com / admin1234');
 }
 
 seed()

@@ -78,8 +78,11 @@ export async function processPurchaseAndStamps(ctx: StaffContext, input: AddStam
     const [program] = await tx
       .select()
       .from(loyaltyPrograms)
-      .where(and(eq(loyaltyPrograms.id, pass.programId), eq(loyaltyPrograms.tenantId, ctx.tenantId)));
+      .where(and(eq(loyaltyPrograms.id, pass.programId), eq(loyaltyPrograms.tenantId, ctx.tenantId)))
+      // FOR SHARE: si un admin está cambiando totalStamps, esta compra espera a que termine
+      .for('share');
     if (!program) throw new NotFoundError('Programa de lealtad no encontrado');
+    if (program.status !== 'active') throw new ConflictError('El programa de lealtad no está activo');
 
     const amountCents = toCents(input.amountSpent);
     const minCents = toCents(program.minPurchaseAmount);

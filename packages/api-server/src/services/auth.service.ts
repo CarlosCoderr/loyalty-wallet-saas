@@ -3,7 +3,7 @@ import { and, eq } from 'drizzle-orm';
 import { db } from '../db/index.js';
 import { staffUsers, tenants } from '../db/schema.js';
 import type { LoginInput } from '../schemas/auth.schema.js';
-import { UnauthorizedError } from '../utils/http-error.js';
+import { ForbiddenError, UnauthorizedError } from '../utils/http-error.js';
 
 // Hash real de una contraseña aleatoria: se compara cuando el usuario no existe
 // para que el tiempo de respuesta no revele qué emails o tenants son válidos.
@@ -32,8 +32,13 @@ export async function authenticateStaff(input: LoginInput) {
   if (!tenant || !staff || !(passwordOk || pinOk)) {
     throw new UnauthorizedError();
   }
+  // Solo se informa tras validar la clave: no revela a terceros que la cuenta existe
+  if (!staff.isActive) {
+    throw new ForbiddenError('Tu usuario está desactivado. Contacta al administrador.');
+  }
 
   return {
+    tokenVersion: staff.tokenVersion,
     staff: {
       id: staff.id,
       fullName: staff.fullName,

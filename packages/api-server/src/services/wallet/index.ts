@@ -78,3 +78,10 @@ export async function notifyPassChanged(passId: string, log: FastifyBaseLogger):
     log.error({ err, passId }, '⚠️ Error al notificar actualización de tarjeta Wallet');
   }
 }
+
+/** Igual que notifyPassChanged para varios pases (p. ej. al editar un programa). Uno a la vez. */
+export async function notifyPassesChanged(passIds: string[], log: FastifyBaseLogger): Promise<void> {
+  for (const passId of passIds) {
+    await notifyPassChanged(passId, log);
+  }
+}

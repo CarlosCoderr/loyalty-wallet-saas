@@ -1,5 +1,6 @@
 import { relations, sql } from 'drizzle-orm';
 import {
+  boolean,
   check,
   date,
   index,
@@ -28,6 +29,8 @@ export const stampRuleTypeEnum = pgEnum('stamp_rule_type', ['per_amount', 'per_v
 export const passStatusEnum = pgEnum('pass_status', ['active', 'suspended']);
 export const transactionTypeEnum = pgEnum('transaction_type', ['add_stamp', 'redeem_reward']);
 export const rewardStatusEnum = pgEnum('reward_status', ['pending', 'redeemed']);
+// draft: aún no emite pases | active: opera normal | archived: no suma sellos nuevos (sí canjes)
+export const programStatusEnum = pgEnum('program_status', ['draft', 'active', 'archived']);
 
 // ==========================================
 // HELPERS
@@ -67,12 +70,18 @@ export const branches = pgTable(
     id: id(),
     tenantId: tenantId(),
     name: varchar('name', { length: 255 }).notNull(),
+    // Código corto para reportes y la PWA (ej. CENTRO). Obligatorio en la API; nullable por filas antiguas.
+    code: varchar('code', { length: 50 }),
     address: text('address'),
+    phone: varchar('phone', { length: 50 }),
     // Solo se guarda el hash; la API key en claro se muestra una única vez al crearla.
     apiKeyHash: varchar('api_key_hash', { length: 255 }).unique(),
     createdAt: createdAt(),
   },
-  (t) => [index('branches_tenant_idx').on(t.tenantId)],
+  (t) => [
+    index('branches_tenant_idx').on(t.tenantId),
+    unique('branches_tenant_code_uq').on(t.tenantId, t.code),
+  ],
 );
 
 export const staffUsers = pgTable(
@@ -87,7 +96,11 @@ export const staffUsers = pgTable(
     // PIN rápido de 4 dígitos para cajero, hasheado con bcrypt.
     pinHash: varchar('pin_hash', { length: 255 }),
     role: staffRoleEnum('role').default('cashier').notNull(),
+    isActive: boolean('is_active').default(true).notNull(),
+    // Va dentro del JWT: al cambiar contraseña/PIN se incrementa y los tokens anteriores dejan de valer.
+    tokenVersion: integer('token_version').default(0).notNull(),
     createdAt: createdAt(),
+    updatedAt: updatedAt(),
   },
   (t) => [
     unique('staff_users_tenant_email_uq').on(t.tenantId, t.email),
@@ -109,6 +122,8 @@ export const loyaltyPrograms = pgTable(
     minPurchaseAmount: money('min_purchase_amount').default('0.00').notNull(), // Umbral mínimo
     totalStamps: integer('total_stamps').default(10).notNull(),
     rewardTitle: varchar('reward_title', { length: 255 }).notNull(),
+    rewardDescription: text('reward_description'),
+    status: programStatusEnum('status').default('active').notNull(),
 
     // Personalización estética
     primaryColor: varchar('primary_color', { length: 20 }).default('#000000').notNull(),
