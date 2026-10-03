@@ -1,14 +1,36 @@
 import { and, asc, eq, sql } from 'drizzle-orm';
 import { db } from '../db/index.js';
-import { loyaltyPrograms, passes, rewardRedemptions, transactions } from '../db/schema.js';
+import { branches, loyaltyPrograms, passes, rewardRedemptions, transactions } from '../db/schema.js';
 import type { AddStampsInput, RedeemRewardInput } from '../schemas/loyalty.schema.js';
-import { ConflictError, NotFoundError } from '../utils/http-error.js';
+import { ConflictError, ForbiddenError, NotFoundError } from '../utils/http-error.js';
 
 // Quién ejecuta la operación (sale del JWT)
 export interface StaffContext {
   tenantId: string;
   staffId: string;
   branchId: string | null;
+}
+
+/**
+ * Sucursal de la operación: la asignada al usuario o, solo para un admin, la que indique.
+ * Se valida contra el tenant: la FK aceptaría una sucursal de otro negocio.
+ */
+export async function resolveStaffContext(
+  user: { tenantId: string; sub: string; role: 'admin' | 'cashier'; branchId: string | null },
+  requestedBranchId: string | undefined,
+): Promise<StaffContext> {
+  const base = { tenantId: user.tenantId, staffId: user.sub, branchId: user.branchId };
+  if (requestedBranchId === undefined || requestedBranchId === user.branchId) return base;
+
+  if (user.role !== 'admin') {
+    throw new ForbiddenError('Solo un administrador puede registrar operaciones en otra sucursal');
+  }
+  const branch = await db.query.branches.findFirst({
+    where: and(eq(branches.id, requestedBranchId), eq(branches.tenantId, user.tenantId)),
+    columns: { id: true },
+  });
+  if (!branch) throw new NotFoundError('Sucursal no encontrada');
+  return { ...base, branchId: branch.id };
 }
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
