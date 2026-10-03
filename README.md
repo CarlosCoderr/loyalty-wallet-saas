@@ -9,7 +9,7 @@ Especificación en [.spec/spec.md](.spec/spec.md).
 packages/
   api-server/   API Fastify + Drizzle (PostgreSQL)
   dashboard/    Dashboard B2B (Next.js), pendiente
-  staff-pwa/    PWA del cajero (Next.js), pendiente
+  staff-pwa/    PWA del cajero (Next.js 16): escanear QR, sellos, premios, inscribir clientes
   pass-engine/  Reservado (la generación de pases vive hoy en api-server)
 .spec/          Spec, esquema DBML y contrato OpenAPI
 ```
@@ -27,7 +27,20 @@ docker compose up -d   # PostgreSQL 18 en localhost:5433 (usuario/clave/db: loya
 cp .env.example .env   # ya apunta al contenedor
 npm run db:migrate     # aplica las migraciones de packages/api-server/drizzle
 npm run dev:api        # http://localhost:4000/health
+npm run dev:staff      # PWA del cajero en http://localhost:3001 (otra terminal)
 ```
+
+### PWA del cajero (`packages/staff-pwa`)
+
+- Login con contraseña o PIN → escanear el QR de la tarjeta (cámara trasera) o escribir su número →
+  registrar la compra (suma sellos) y entregar premios → inscribir clientes nuevos y mostrarles un QR
+  para agregar la tarjeta a Apple Wallet.
+- La API se configura con `NEXT_PUBLIC_API_URL` en `packages/staff-pwa/.env.local`
+  (por defecto `http://localhost:4000`). Al cambiarla hay que volver a compilar.
+- La cámara solo funciona en `https` o en `localhost`. Para probar desde un teléfono usa un túnel https
+  (p. ej. ngrok) y agrega ese origen a `CORS_ORIGIN` de la API.
+- `npm run typecheck` revisa los tipos con `tsc`: TypeScript 7 no expone la API que usa `next build`
+  para revisarlos, así que ese chequeo está desactivado en `next.config.ts`.
 
 ## Scripts (raíz)
 

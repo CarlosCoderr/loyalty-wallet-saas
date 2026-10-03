@@ -1,8 +1,8 @@
 # 📄 SPEC-001: Multi-Tenant Digital Loyalty Cards Platform (SaaS)
 
 ## 1. Stack Tecnológico
-- **Frontend / Dashboard B2B:** Next.js 15 (App Router, TypeScript), Tailwind CSS, Shadcn UI.
-- **Staff Validation App (Cajero):** Next.js 15 PWA (`html5-qrcode`).
+- **Frontend / Dashboard B2B:** Next.js 16 (App Router, TypeScript), Tailwind CSS, Shadcn UI.
+- **Staff Validation App (Cajero):** Next.js 16 PWA con lector QR `@zxing/browser` (reemplaza a `html5-qrcode`, sin mantenimiento desde 2023).
 - **Backend API Layer:** Node.js (TypeScript) + Fastify (`@fastify/jwt`, `@fastify/cors`) + Zod para validación.
 - **Database & ORM:** PostgreSQL (Multi-tenant isolation por `tenant_id`) + Drizzle ORM.
 - **Queue & Background Jobs:** Redis + BullMQ.

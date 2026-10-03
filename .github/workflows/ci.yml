@@ -7,7 +7,7 @@ on:
 
 jobs:
   api-server:
-    name: Typecheck y pruebas (api-server)
+    name: Typecheck, pruebas y build
     runs-on: ubuntu-latest
 
     services:
@@ -44,3 +44,6 @@ jobs:
 
       - name: Pruebas (Vitest + app.inject)
         run: npm test
+
+      - name: Build de la PWA del cajero
+        run: npm run build --workspace=packages/staff-pwa

@@ -1,0 +1,24 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-brand-50: #eef2ff;
+  --color-brand-100: #e0e7ff;
+  --color-brand-300: #a5b4fc;
+  --color-brand-500: #4f46e5;
+  --color-brand-600: #1e3a8a;
+  --color-brand-700: #172e6e;
+}
+
+html,
+body {
+  background: var(--color-slate-50);
+  color: var(--color-slate-900);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Inputs numéricos sin flechas: el monto se escribe con el teclado decimal */
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
