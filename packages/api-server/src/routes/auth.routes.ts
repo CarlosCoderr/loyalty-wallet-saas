@@ -1,11 +1,10 @@
 import rateLimit from '@fastify/rate-limit';
 import type { FastifyInstance } from 'fastify';
-import { env } from '../env.js';
 import { authenticateJWT } from '../middlewares/auth.middleware.js';
 import { loginSchema } from '../schemas/auth.schema.js';
 import { authenticateStaff } from '../services/auth.service.js';
 
-export async function authRoutes(app: FastifyInstance) {
+export async function authRoutes(app: FastifyInstance, opts: { loginRateLimitMax: number }) {
   // global: false → el límite solo aplica a las rutas que lo piden (no a /me).
   // Es una primera barrera por IP; el bloqueo por cuenta (auth.service) es la protección fina.
   await app.register(rateLimit, {
@@ -21,7 +20,7 @@ export async function authRoutes(app: FastifyInstance) {
     '/login',
     {
       // Por IP: generoso porque los cajeros de una sucursal suelen compartir IP
-      config: { rateLimit: { max: env.LOGIN_RATE_LIMIT_MAX, timeWindow: '15 minutes' } },
+      config: { rateLimit: { max: opts.loginRateLimitMax, timeWindow: '15 minutes' } },
     },
     async (request) => {
       // Si el body es inválido, ZodError → 400 en el error handler global

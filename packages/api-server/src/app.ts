@@ -12,7 +12,12 @@ import { passesRoutes } from './routes/passes.routes.js';
 import { customerRoutes, staffRoutes } from './routes/staff-customer.routes.js';
 
 // Construye la app sin escuchar en ningún puerto: así se puede usar en tests con app.inject().
-export async function buildApp() {
+export interface BuildAppOptions {
+  // Intentos de login por IP cada 15 min (por defecto LOGIN_RATE_LIMIT_MAX)
+  loginRateLimitMax?: number;
+}
+
+export async function buildApp(options: BuildAppOptions = {}) {
   const app = Fastify({
     trustProxy: env.TRUST_PROXY,
     logger: env.NODE_ENV === 'test' ? false : { level: env.NODE_ENV === 'production' ? 'info' : 'debug' },
@@ -48,7 +53,10 @@ export async function buildApp() {
 
   // Rutas
   app.get('/health', async () => ({ status: 'ok', timestamp: new Date().toISOString() }));
-  await app.register(authRoutes, { prefix: '/api/v1/auth' });
+  await app.register(authRoutes, {
+    prefix: '/api/v1/auth',
+    loginRateLimitMax: options.loginRateLimitMax ?? env.LOGIN_RATE_LIMIT_MAX,
+  });
   await app.register(loyaltyRoutes, { prefix: '/api/v1/loyalty' });
   // webServiceURL del pase de Apple: https://<dominio>/api/apple
   await app.register(appleWalletRoutes, { prefix: '/api/apple' });

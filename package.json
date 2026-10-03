@@ -16,7 +16,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "db:seed": "npm run db:seed --workspace=packages/api-server"
+    "db:seed": "npm run db:seed --workspace=packages/api-server",
+    "test": "npm run test --workspaces --if-present"
   },
   "devDependencies": {
     "@types/node": "^26.6.4",

@@ -10,7 +10,7 @@ packages/
   api-server/   API Fastify + Drizzle (PostgreSQL)
   dashboard/    Dashboard B2B (Next.js), pendiente
   staff-pwa/    PWA del cajero (Next.js), pendiente
-  pass-engine/  Generación de pases Apple/Google, pendiente
+  pass-engine/  Reservado (la generación de pases vive hoy en api-server)
 .spec/          Spec, esquema DBML y contrato OpenAPI
 ```
 
@@ -35,11 +35,29 @@ npm run dev:api        # http://localhost:4000/health
 |---|---|
 | `dev:api` | API en modo watch |
 | `build` | Compila todos los paquetes |
-| `typecheck` | Revisa tipos en todos los paquetes |
+| `typecheck` | Revisa tipos en todos los paquetes (código y pruebas) |
+| `test` | Ejecuta las pruebas (Vitest) |
 | `db:generate` | Genera una migración a partir de `packages/api-server/src/db/schema.ts` |
 | `db:migrate` | Aplica las migraciones pendientes |
 | `db:push` | Sincroniza el esquema sin migración (solo desarrollo) |
 | `db:studio` | Abre Drizzle Studio |
+| `db:seed` | Recrea el tenant demo (solo BD local y fuera de producción) |
+
+## Pruebas
+
+```bash
+docker compose up -d   # el mismo PostgreSQL de desarrollo
+npm test               # o, dentro de packages/api-server: npm run test:watch
+```
+
+- Usan una BD propia, `loyalty_test`, que se crea y migra sola. **Nunca tocan la BD de desarrollo**:
+  se niegan a correr si el nombre de la BD no termina en `_test`. Otra BD: `TEST_DATABASE_URL`.
+- Prueban la API completa con `app.inject()` (hooks, validación, errores, BD real) sin abrir puertos.
+- Cada archivo recrea los datos demo (`seedDemoData`) y los archivos corren de uno en uno.
+- La prueba de firma del `.pkpass` genera certificados de prueba con `openssl`; si no está instalado, se omite.
+- CI (`.github/workflows/ci.yml`) ejecuta `typecheck` y `test` en cada push y pull request.
+
+Antes de dar un cambio por terminado: `npm run typecheck && npm test`.
 
 ## Base de datos
 
