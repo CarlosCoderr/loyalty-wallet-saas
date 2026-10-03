@@ -1,6 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import bcrypt from 'bcrypt';
 import { eq } from 'drizzle-orm';
+import { env } from '../env.js';
 import { db } from './index.js';
 import {
   branches,
@@ -13,8 +14,28 @@ import {
 } from './schema.js';
 
 const DEMO_SLUG = 'agencia-demo';
+const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]']);
+
+// Guardrail anti-destrucción: el seed BORRA el tenant demo en cascada.
+// Se compara el hostname ya parseado: buscar "localhost" en el texto de la URL
+// aceptaría, por ejemplo, una contraseña "localhost" de una BD remota.
+function assertSafeToSeed() {
+  let host = '';
+  try {
+    host = new URL(env.DATABASE_URL).hostname;
+  } catch {
+    // URL ilegible: no se puede saber a dónde apunta → no se ejecuta
+  }
+  if (env.NODE_ENV === 'production' || !LOCAL_HOSTS.has(host)) {
+    console.error(
+      `❌ SEED ABORTADO: solo se ejecuta fuera de producción y contra una BD local (host actual: "${host || '?'}").`,
+    );
+    process.exit(1);
+  }
+}
 
 async function seed() {
+  assertSafeToSeed();
   console.log('🌱 Iniciando carga de datos de prueba...');
 
   const tenantData = await db.transaction(async (tx) => {

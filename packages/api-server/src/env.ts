@@ -17,11 +17,21 @@ const rootPath = z
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.coerce.number().int().positive().default(4000),
-  DATABASE_URL: z.string().min(1, 'DATABASE_URL es obligatoria'),
+  DATABASE_URL: z
+    .string()
+    .min(1, 'DATABASE_URL es obligatoria')
+    .refine((u) => URL.canParse(u) && /^postgres(ql)?:$/.test(new URL(u).protocol), {
+      message: 'DATABASE_URL debe ser una URL postgres://usuario:clave@host:puerto/base',
+    }),
   JWT_SECRET: z.string().min(32, 'JWT_SECRET debe tener al menos 32 caracteres'),
   JWT_EXPIRES_IN: z.string().default('12h'),
   // Orígenes permitidos separados por coma, o "*" para cualquiera (solo desarrollo).
   CORS_ORIGIN: z.string().default('*'),
+  // Intentos de login por IP cada 15 min (primera barrera; el bloqueo por cuenta es aparte)
+  LOGIN_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(20),
+  // true detrás de un proxy/CDN (Nginx, Cloudflare…): así request.ip es la IP real del cliente
+  // y el límite por IP no trata a todos como uno solo. NO activar sin proxy (se podría falsificar la IP).
+  TRUST_PROXY: z.stringbool().default(false),
 
   // URL pública de esta API (enlaces de descarga y webServiceURL del pase). Sin "/" final.
   PUBLIC_BASE_URL: z

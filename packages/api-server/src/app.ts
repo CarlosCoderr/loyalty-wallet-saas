@@ -14,6 +14,7 @@ import { customerRoutes, staffRoutes } from './routes/staff-customer.routes.js';
 // Construye la app sin escuchar en ningún puerto: así se puede usar en tests con app.inject().
 export async function buildApp() {
   const app = Fastify({
+    trustProxy: env.TRUST_PROXY,
     logger: env.NODE_ENV === 'test' ? false : { level: env.NODE_ENV === 'production' ? 'info' : 'debug' },
   });
 

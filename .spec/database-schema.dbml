@@ -79,6 +79,8 @@ Table staff_users {
   role staff_role [not null, default: 'cashier']   // cashier requiere branch_id (validado en la API)
   is_active boolean [not null, default: true]
   token_version int [not null, default: 0]         // va en el JWT; +1 al cambiar contraseña/PIN
+  failed_attempts int [not null, default: 0]       // intentos fallidos de login (incremento atómico)
+  lockout_until timestamptz                        // bloqueo de 15 min al llegar a 5 fallos
   created_at timestamptz [not null, default: `now()`]
   updated_at timestamptz [not null, default: `now()`]
 

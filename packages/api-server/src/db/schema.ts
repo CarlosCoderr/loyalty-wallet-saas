@@ -99,6 +99,9 @@ export const staffUsers = pgTable(
     isActive: boolean('is_active').default(true).notNull(),
     // Va dentro del JWT: al cambiar contraseña/PIN se incrementa y los tokens anteriores dejan de valer.
     tokenVersion: integer('token_version').default(0).notNull(),
+    // Bloqueo por intentos fallidos de login (protege el PIN de 4 dígitos contra fuerza bruta)
+    failedAttempts: integer('failed_attempts').default(0).notNull(),
+    lockoutUntil: timestamp('lockout_until', { withTimezone: true }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
