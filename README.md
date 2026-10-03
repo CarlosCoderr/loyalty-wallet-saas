@@ -7,7 +7,7 @@ Especificación en [.spec/spec.md](.spec/spec.md).
 
 ```
 packages/
-  api-server/   API Express + Drizzle (PostgreSQL)
+  api-server/   API Fastify + Drizzle (PostgreSQL)
   dashboard/    Dashboard B2B (Next.js), pendiente
   staff-pwa/    PWA del cajero (Next.js), pendiente
   pass-engine/  Generación de pases Apple/Google, pendiente

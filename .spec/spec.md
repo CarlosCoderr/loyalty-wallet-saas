@@ -3,7 +3,7 @@
 ## 1. Stack Tecnológico
 - **Frontend / Dashboard B2B:** Next.js 15 (App Router, TypeScript), Tailwind CSS, Shadcn UI.
 - **Staff Validation App (Cajero):** Next.js 15 PWA (`html5-qrcode`).
-- **Backend API Layer:** Node.js (TypeScript) + Express.
+- **Backend API Layer:** Node.js (TypeScript) + Fastify (`@fastify/jwt`, `@fastify/cors`) + Zod para validación.
 - **Database & ORM:** PostgreSQL (Multi-tenant isolation por `tenant_id`) + Drizzle ORM.
 - **Queue & Background Jobs:** Redis + BullMQ.
 - **Core Wallet Engines:**
