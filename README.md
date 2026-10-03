@@ -17,13 +17,14 @@ packages/
 ## Requisitos
 
 - Node.js 24+
-- PostgreSQL
+- Docker Desktop (para PostgreSQL de desarrollo)
 
 ## Puesta en marcha
 
 ```bash
 npm install
-cp .env.example .env   # y completa DATABASE_URL
+docker compose up -d   # PostgreSQL 18 en localhost:5433 (usuario/clave/db: loyalty)
+cp .env.example .env   # ya apunta al contenedor
 npm run db:migrate     # aplica las migraciones de packages/api-server/drizzle
 npm run dev:api        # http://localhost:4000/health
 ```
