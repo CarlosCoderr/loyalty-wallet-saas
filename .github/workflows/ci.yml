@@ -47,3 +47,52 @@ jobs:
 
       - name: Build de la PWA del cajero
         run: npm run build --workspace=packages/staff-pwa
+
+  e2e:
+    name: E2E de la PWA (Playwright)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: loyalty
+          POSTGRES_PASSWORD: loyalty
+          POSTGRES_DB: loyalty
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U loyalty -d loyalty"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      TEST_DATABASE_URL: postgres://loyalty:loyalty@localhost:5432/loyalty_test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Chromium para Playwright
+        run: npx playwright install --with-deps chromium
+
+      # Playwright arranca la API (:4100, BD _test) y compila/sirve la PWA (:3100)
+      - name: Pruebas E2E (cámara simulada con el QR de DEMO-0001)
+        run: npm run test:e2e
+
+      - name: Reporte de Playwright (trazas y capturas)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            packages/e2e/playwright-report/
+            packages/e2e/test-results/
+          retention-days: 7

@@ -16,7 +16,8 @@
     "db:studio": "drizzle-kit studio --config ../../drizzle.config.ts",
     "db:seed": "tsx src/db/seed.ts",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "e2e:server": "tsx test/e2e-server.ts"
   },
   "dependencies": {
     "@fastify/cors": "^11.3.0",

@@ -10,6 +10,7 @@ packages/
   api-server/   API Fastify + Drizzle (PostgreSQL)
   dashboard/    Dashboard B2B (Next.js), pendiente
   staff-pwa/    PWA del cajero (Next.js 16): escanear QR, sellos, premios, inscribir clientes
+  e2e/          Pruebas E2E de la PWA en un navegador real (Playwright)
   pass-engine/  Reservado (la generación de pases vive hoy en api-server)
 .spec/          Spec, esquema DBML y contrato OpenAPI
 ```
@@ -49,7 +50,8 @@ npm run dev:staff      # PWA del cajero en http://localhost:3001 (otra terminal)
 | `dev:api` | API en modo watch |
 | `build` | Compila todos los paquetes |
 | `typecheck` | Revisa tipos en todos los paquetes (código y pruebas) |
-| `test` | Ejecuta las pruebas (Vitest) |
+| `test` | Ejecuta las pruebas de la API (Vitest) |
+| `test:e2e` | Pruebas E2E de la PWA con Playwright (compila la PWA; ~1 min) |
 | `db:generate` | Genera una migración a partir de `packages/api-server/src/db/schema.ts` |
 | `db:migrate` | Aplica las migraciones pendientes |
 | `db:push` | Sincroniza el esquema sin migración (solo desarrollo) |
@@ -68,9 +70,25 @@ npm test               # o, dentro de packages/api-server: npm run test:watch
 - Prueban la API completa con `app.inject()` (hooks, validación, errores, BD real) sin abrir puertos.
 - Cada archivo recrea los datos demo (`seedDemoData`) y los archivos corren de uno en uno.
 - La prueba de firma del `.pkpass` genera certificados de prueba con `openssl`; si no está instalado, se omite.
-- CI (`.github/workflows/ci.yml`) ejecuta `typecheck` y `test` en cada push y pull request.
+- CI (`.github/workflows/ci.yml`) ejecuta `typecheck`, `test` y `test:e2e` en cada push y pull request.
 
-Antes de dar un cambio por terminado: `npm run typecheck && npm test`.
+### E2E de la PWA (`packages/e2e`)
+
+```bash
+npx playwright install chromium   # solo la primera vez
+npm run test:e2e                  # reporte: npx playwright show-report packages/e2e/playwright-report
+```
+
+- Playwright arranca solo la API en `:4100` (BD `loyalty_test`, migrada y con los datos demo recreados)
+  y compila/sirve la PWA en `:3100` (carpeta `.next-e2e`). No toca tus servidores de `:4000`/`:3001`
+  ni tu `.next`; si `4100` o `3100` están ocupados, falla en vez de reutilizarlos.
+- La cámara es simulada: Chrome reproduce un video con el QR de `DEMO-0001` (lo genera `global-setup.ts`),
+  así se prueba el lector `@zxing/browser` de verdad. Las demás pruebas corren sin cámara (entrada manual).
+- Cubren login (clave, PIN, sesión vencida), escaneo, compras y sellos, premios, inscripción con QR de
+  Apple Wallet, manifest y service worker. Cualquier error de JavaScript en consola hace fallar la prueba.
+- Si una falla, `test-results/` guarda captura y traza (`npx playwright show-trace <zip>`); en CI se suben como artefacto.
+
+Antes de dar un cambio por terminado: `npm run typecheck && npm test` (y `npm run test:e2e` si tocaste la PWA).
 
 ## Base de datos
 

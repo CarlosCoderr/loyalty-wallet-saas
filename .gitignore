@@ -4,6 +4,7 @@ node_modules/
 # Builds
 dist/
 .next/
+.next-e2e/
 out/
 *.tsbuildinfo
 next-env.d.ts
@@ -27,3 +28,8 @@ Thumbs.db
 .vscode/*
 !.vscode/extensions.json
 .idea/
+
+# Pruebas E2E (Playwright)
+packages/e2e/.cache/
+packages/e2e/test-results/
+packages/e2e/playwright-report/
