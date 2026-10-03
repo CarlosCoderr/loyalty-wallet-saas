@@ -11,6 +11,7 @@ import type {
   UpdateStaffInput,
 } from '../schemas/staff-customer.schema.js';
 import { ConflictError, HttpError, NotFoundError, isUniqueViolation } from '../utils/http-error.js';
+import { appleDownloadUrl } from './pass-download.service.js';
 import { loadPassSnapshot, walletService } from './wallet/index.js';
 
 const SALT_ROUNDS = 10;
@@ -219,7 +220,11 @@ export async function getCustomerDetails(tenantId: string, customerId: string) {
     },
   });
   if (!customer) throw new NotFoundError('Cliente no encontrado');
-  return customer;
+  // Para reenviar al cliente el enlace de su tarjeta si la perdió o cambió de iPhone
+  return {
+    ...customer,
+    passes: customer.passes.map((p) => ({ ...p, appleDownloadUrl: appleDownloadUrl(p.serialNumber) })),
+  };
 }
 
 export async function createCustomer(tenantId: string, data: CreateCustomerInput) {
@@ -292,6 +297,8 @@ export async function issuePass(tenantId: string, customerId: string, programId:
     program: { id: program.id, title: program.title },
     wallet: {
       provider: walletService.provider,
+      // Enlace firmado para enviar al cliente: al abrirlo en el iPhone aparece "Agregar a Apple Wallet"
+      appleDownloadUrl: appleDownloadUrl(pass!.serialNumber),
       googleSaveUrl: bundle.googleSaveUrl ?? null,
     },
   };

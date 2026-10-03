@@ -23,22 +23,38 @@ const envSchema = z.object({
   // Orígenes permitidos separados por coma, o "*" para cualquiera (solo desarrollo).
   CORS_ORIGIN: z.string().default('*'),
 
-  // Wallet: 'mock' simula los avisos en el log; 'production' usa Apple/Google reales.
+  // URL pública de esta API (enlaces de descarga y webServiceURL del pase). Sin "/" final.
+  PUBLIC_BASE_URL: z
+    .url('PUBLIC_BASE_URL inválida')
+    .transform((u) => u.replace(/\/+$/, ''))
+    .optional(),
+
+  // Wallet: 'mock' simula pases y avisos; 'production' firma pases reales de Apple.
   WALLET_PROVIDER: z.enum(['mock', 'production']).default('mock'),
   APPLE_PASS_TYPE_IDENTIFIER: z.string().min(1).optional(),
   APPLE_TEAM_ID: z.string().min(1).optional(),
-  APPLE_P12_CERT_PATH: rootPath,
-  APPLE_P12_PASSWORD: z.string().optional(),
+  // Certificados PEM: WWDR de Apple + certificado y llave del Pass Type ID
+  APPLE_WWDR_CERT_PATH: rootPath,
+  APPLE_SIGNER_CERT_PATH: rootPath,
+  APPLE_SIGNER_KEY_PATH: rootPath,
+  APPLE_SIGNER_KEY_PASSPHRASE: z.string().optional(),
   GOOGLE_ISSUER_ID: z.string().min(1).optional(),
   GOOGLE_SERVICE_ACCOUNT_KEY_PATH: rootPath,
 }).superRefine((e, ctx) => {
+  // Apple solo acepta webServiceURL https (http únicamente con "Allow HTTP Services" en un iPhone
+  // de desarrollo) y los enlaces de descarga llevan datos del cliente: https en producción siempre
+  if (e.NODE_ENV === 'production' && e.PUBLIC_BASE_URL && !e.PUBLIC_BASE_URL.startsWith('https://')) {
+    ctx.addIssue({ code: 'custom', path: ['PUBLIC_BASE_URL'], message: 'PUBLIC_BASE_URL debe ser https en producción' });
+  }
+
   if (e.WALLET_PROVIDER !== 'production') return;
   const required = [
+    'PUBLIC_BASE_URL',
     'APPLE_PASS_TYPE_IDENTIFIER',
     'APPLE_TEAM_ID',
-    'APPLE_P12_CERT_PATH',
-    'GOOGLE_ISSUER_ID',
-    'GOOGLE_SERVICE_ACCOUNT_KEY_PATH',
+    'APPLE_WWDR_CERT_PATH',
+    'APPLE_SIGNER_CERT_PATH',
+    'APPLE_SIGNER_KEY_PATH',
   ] as const;
   for (const key of required) {
     if (!e[key]) ctx.addIssue({ code: 'custom', path: [key], message: `${key} es obligatoria con WALLET_PROVIDER=production` });
@@ -52,4 +68,7 @@ if (!parsed.success) {
   process.exit(1);
 }
 
-export const env = parsed.data;
+export const env = {
+  ...parsed.data,
+  PUBLIC_BASE_URL: parsed.data.PUBLIC_BASE_URL ?? `http://localhost:${parsed.data.PORT}`,
+};

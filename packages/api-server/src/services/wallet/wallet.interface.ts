@@ -11,14 +11,20 @@ export interface AppleDeviceTarget {
 export interface PassSnapshot {
   passId: string;
   tenantId: string;
+  tenantName: string;
   serialNumber: string;
+  // Secreto del web service de Apple: va dentro del .pkpass. Nunca loguearlo ni devolverlo en JSON.
+  authenticationToken: string;
   status: 'active' | 'suspended';
+  updatedAt: Date;
   currentStamps: number;
   totalStamps: number;
   pendingRewards: number;
   rewardsRedeemed: number;
   programTitle: string;
   rewardTitle: string;
+  rewardDescription: string | null;
+  colors: { primary: string; background: string; label: string };
   customerFirstName: string;
   googleLoyaltyObjectId: string | null;
   appleDevices: AppleDeviceTarget[];

@@ -8,6 +8,7 @@ import { authRoutes } from './routes/auth.routes.js';
 import { loyaltyRoutes } from './routes/loyalty.routes.js';
 import { HttpError } from './utils/http-error.js';
 import { adminRoutes } from './routes/admin.routes.js';
+import { passesRoutes } from './routes/passes.routes.js';
 import { customerRoutes, staffRoutes } from './routes/staff-customer.routes.js';
 
 // Construye la app sin escuchar en ningún puerto: así se puede usar en tests con app.inject().
@@ -53,5 +54,7 @@ export async function buildApp() {
   await app.register(adminRoutes, { prefix: '/api/v1/admin' });
   await app.register(staffRoutes, { prefix: '/api/v1/admin' });
   await app.register(customerRoutes, { prefix: '/api/v1/customers' });
+  // Descarga pública de tarjetas (enlace firmado)
+  await app.register(passesRoutes, { prefix: '/api/v1/passes' });
   return app;
 }
