@@ -7,6 +7,7 @@ import {
   redeemReward,
   type StaffContext,
 } from '../services/loyalty.service.js';
+import { notifyPassChanged } from '../services/wallet/index.js';
 
 // Los errores (Zod → 400, HttpError → su status) los resuelve el error handler global de app.ts
 const staffContext = (request: FastifyRequest): StaffContext => ({
@@ -30,6 +31,8 @@ export async function loyaltyRoutes(app: FastifyInstance) {
   app.post('/stamps', async (request) => {
     const body = addStampsSchema.parse(request.body);
     const result = await processPurchaseAndStamps(staffContext(request), body);
+    // Ya hubo commit: avisar a Wallet sin hacer esperar al cajero
+    void notifyPassChanged(result.passId, request.log);
     return { status: 'success', data: result };
   });
 
@@ -37,6 +40,7 @@ export async function loyaltyRoutes(app: FastifyInstance) {
   app.post('/redeem', async (request) => {
     const body = redeemRewardSchema.parse(request.body);
     const result = await redeemReward(staffContext(request), body);
+    void notifyPassChanged(result.passId, request.log);
     return { status: 'success', data: result };
   });
 }

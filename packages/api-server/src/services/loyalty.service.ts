@@ -141,6 +141,7 @@ export async function processPurchaseAndStamps(ctx: StaffContext, input: AddStam
       .where(and(eq(rewardRedemptions.passId, pass.id), eq(rewardRedemptions.status, 'pending')));
 
     return {
+      passId: pass.id,
       transactionId: transaction.id,
       stampsEarned,
       currentStamps,
@@ -213,6 +214,7 @@ export async function redeemReward(ctx: StaffContext, input: RedeemRewardInput) 
       .where(eq(passes.id, pass.id));
 
     return {
+      passId: pass.id,
       redemptionId: pendingReward.id,
       rewardTitle: pendingReward.rewardTitle,
       transactionId: transaction.id,
